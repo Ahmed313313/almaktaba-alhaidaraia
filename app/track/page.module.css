@@ -1,0 +1,294 @@
+.pageHeader {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: var(--color-text-on-dark);
+  padding: var(--spacing-2xl) 0;
+  text-align: center;
+}
+
+.pageHeader h1 { color: var(--color-secondary); margin-bottom: var(--spacing-xs); }
+.pageHeader p { color: rgba(245, 240, 232, 0.7); }
+
+.trackContainer {
+  padding: var(--spacing-2xl) 0 var(--spacing-3xl);
+  max-width: 750px;
+  margin: 0 auto;
+}
+
+/* Search Card */
+.searchCard {
+  background: var(--color-bg-card);
+  padding: var(--spacing-2xl);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.searchIcon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.searchCard h2 {
+  font-size: 1.3rem;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-primary);
+}
+
+.searchCard > p {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin-bottom: var(--spacing-xl);
+}
+
+.searchForm {
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+.searchInputGroup {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  background: var(--color-bg-warm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 6px 6px 6px 14px;
+  transition: border-color var(--transition-fast);
+}
+
+.searchInputGroup:focus-within {
+  border-color: var(--color-secondary);
+}
+
+.inputIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  padding: 0.6rem 0.5rem !important;
+  font-size: 1rem;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+/* Results */
+.resultsTitle {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-primary);
+}
+
+.ordersList {
+  margin-top: var(--spacing-2xl);
+}
+
+/* Order Card */
+.orderCard {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.orderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-warm);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.orderNumber {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 1rem;
+  margin-left: var(--spacing-md);
+}
+
+.orderDate {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Progress Bar */
+.progressSection {
+  padding: var(--spacing-lg) var(--spacing-xl);
+}
+
+.progressBar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  margin-bottom: var(--spacing-md);
+}
+
+.progressStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  flex: 1;
+}
+
+.progressDot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: white;
+  z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.progressActive {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.progressLabel {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.progressLabelActive {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.progressLine {
+  position: absolute;
+  top: 16px;
+  left: -50%;
+  right: 50%;
+  height: 3px;
+  background: var(--color-border);
+  z-index: 0;
+  transition: background 0.3s ease;
+}
+
+.progressLineActive {
+  /* color set inline */
+}
+
+.statusDescription {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cancelledNote {
+  padding: var(--spacing-md) var(--spacing-lg);
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  background: rgba(149, 165, 166, 0.05);
+}
+
+/* Order Items */
+.orderItems {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.orderItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px dashed var(--color-border-light);
+}
+
+.orderItem:last-child { border-bottom: none; }
+
+.itemIcon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemTitle {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.itemMeta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.itemPrice {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-secondary-dark);
+  white-space: nowrap;
+}
+
+/* Order Footer */
+.orderFooter {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-warm);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.footerRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-sm);
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.orderTotal {
+  font-size: 1rem;
+  color: var(--color-secondary-dark);
+  text-align: left;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.orderTotal strong {
+  font-size: 1.1rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .progressLabel { font-size: 0.6rem; }
+  .progressDot { width: 26px; height: 26px; font-size: 0.6rem; }
+  .orderHeader { flex-direction: column; align-items: flex-start; }
+  .footerRow { flex-direction: column; }
+}

@@ -1,0 +1,123 @@
+.pageHeader {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  color: var(--color-text-on-dark);
+  padding: var(--spacing-3xl) 0 var(--spacing-2xl);
+  text-align: center;
+}
+.pageHeader h1 { color: var(--color-secondary); margin-bottom: var(--spacing-xs); }
+.pageHeader p { color: rgba(245, 240, 232, 0.7); }
+
+.section { padding: var(--spacing-3xl) 0; }
+
+.contactGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-3xl);
+}
+
+.infoTitle { font-size: 1.5rem; margin-bottom: var(--spacing-sm); }
+.infoDesc { color: var(--color-text-light); margin-bottom: var(--spacing-2xl); line-height: 1.8; }
+
+.infoCards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.infoCard {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  transition: all var(--transition-base);
+}
+.infoCard:hover {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(212, 168, 83, 0.3);
+}
+
+.infoIcon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, rgba(212, 168, 83, 0.15), rgba(212, 168, 83, 0.05));
+  color: var(--color-secondary-dark);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.infoCard h4 { font-size: 0.9rem; margin-bottom: 2px; }
+.infoCard p { font-size: 0.85rem; color: var(--color-text-light); }
+
+/* Social */
+.socialSection h3 {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-primary);
+}
+
+.socialLinks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+.socialCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  transition: all var(--transition-base);
+}
+.socialCard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-secondary);
+}
+
+.socialIcon { font-size: 1.5rem; color: var(--color-secondary-dark); flex-shrink: 0; }
+.socialCard strong { display: block; font-size: 0.9rem; color: var(--color-primary); }
+.socialCard span { font-size: 0.75rem; color: var(--color-text-muted); }
+
+.whatsappCard { border-color: rgba(37, 211, 102, 0.3); }
+.whatsappCard:hover { border-color: #25D366; }
+.whatsappCard .socialIcon { color: #25D366; }
+
+/* Map */
+.mapSection {
+  display: flex;
+  align-items: stretch;
+}
+
+.mapPlaceholder {
+  width: 100%;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--spacing-3xl);
+  color: var(--color-text-on-dark);
+}
+
+.mapIcon { font-size: 3rem; color: var(--color-secondary); margin-bottom: var(--spacing-lg); }
+.mapPlaceholder h3 { color: var(--color-secondary); margin-bottom: var(--spacing-md); font-size: 1.3rem; }
+.mapPlaceholder p { color: rgba(245, 240, 232, 0.7); margin-bottom: var(--spacing-xl); line-height: 1.8; max-width: 350px; }
+
+@media (max-width: 768px) {
+  .contactGrid { grid-template-columns: 1fr; }
+  .infoCards { grid-template-columns: 1fr; }
+  .socialLinks { grid-template-columns: 1fr; }
+}
