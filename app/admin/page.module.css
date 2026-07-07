@@ -364,6 +364,41 @@
   color: var(--color-secondary-dark);
 }
 
+/* Bulk Delete Bar */
+.bulkBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: linear-gradient(135deg, rgba(231, 76, 60, 0.08), rgba(231, 76, 60, 0.04));
+  border: 1px solid rgba(231, 76, 60, 0.2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bulkBar span {
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.bulkBar strong {
+  color: var(--color-danger);
+  font-size: 1rem;
+}
+
+/* Selected Row */
+.selectedRow td {
+  background: rgba(231, 76, 60, 0.04) !important;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .statsGrid { grid-template-columns: repeat(2, 1fr); }
@@ -376,4 +411,5 @@
   .formRow { grid-template-columns: 1fr; }
   .orderBody { grid-template-columns: 1fr; }
   .tabs { flex-wrap: nowrap; }
+  .bulkBar { flex-direction: column; align-items: flex-start; }
 }

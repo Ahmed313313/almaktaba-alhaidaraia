@@ -14,6 +14,7 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [orderFilter, setOrderFilter] = useState('active');
+  const [selectedBooks, setSelectedBooks] = useState([]);
 
   // Data states
   const [books, setBooks] = useState([]);
@@ -165,12 +166,47 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         toast.success('تم حذف الكتاب ✅');
+        setSelectedBooks(prev => prev.filter(id => id !== book.id));
         fetchAll();
       } else {
-        toast.error(data.error);
+        toast.error(data.error || 'فشل الحذف');
       }
     } catch {
-      toast.error('حدث خطأ');
+      toast.error('حدث خطأ في الاتصال');
+    }
+  };
+
+  // ===== Bulk Delete Books =====
+  const handleBulkDelete = async () => {
+    if (selectedBooks.length === 0) return;
+    if (!confirm(`هل أنت متأكد من حذف ${selectedBooks.length} كتاب؟ هذا الإجراء لا يمكن التراجع عنه!`)) return;
+    let deletedCount = 0;
+    let failedCount = 0;
+    for (const id of selectedBooks) {
+      try {
+        const res = await fetch(`/api/books?id=${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) deletedCount++;
+        else failedCount++;
+      } catch { failedCount++; }
+    }
+    if (deletedCount > 0) toast.success(`تم حذف ${deletedCount} كتاب ✅`);
+    if (failedCount > 0) toast.error(`فشل حذف ${failedCount} كتاب`);
+    setSelectedBooks([]);
+    fetchAll();
+  };
+
+  const toggleSelectBook = (id) => {
+    setSelectedBooks(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedBooks.length === books.length) {
+      setSelectedBooks([]);
+    } else {
+      setSelectedBooks(books.map(b => b.id));
     }
   };
 
@@ -391,6 +427,21 @@ export default function AdminPage() {
                 </button>
               </div>
 
+              {/* Bulk Delete Bar */}
+              {selectedBooks.length > 0 && (
+                <div className={styles.bulkBar}>
+                  <span>✅ تم تحديد <strong>{selectedBooks.length}</strong> كتاب</span>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-sm btn-outline" onClick={() => setSelectedBooks([])}>
+                      إلغاء التحديد
+                    </button>
+                    <button className="btn btn-sm btn-danger" onClick={handleBulkDelete}>
+                      <FiTrash2 /> حذف المحدد ({selectedBooks.length})
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Book Form Modal */}
               {showBookForm && (
                 <div className={styles.modal}>
@@ -491,6 +542,15 @@ export default function AdminPage() {
                 <table className={styles.table}>
                   <thead>
                     <tr>
+                      <th style={{ width: 40 }}>
+                        <input
+                          type="checkbox"
+                          checked={books.length > 0 && selectedBooks.length === books.length}
+                          onChange={toggleSelectAll}
+                          title="تحديد الكل"
+                          style={{ cursor: 'pointer', width: 16, height: 16 }}
+                        />
+                      </th>
                       <th>العنوان</th>
                       <th>المؤلف</th>
                       <th>التصنيف</th>
@@ -502,7 +562,15 @@ export default function AdminPage() {
                   </thead>
                   <tbody>
                     {books.map(book => (
-                      <tr key={book.id}>
+                      <tr key={book.id} className={selectedBooks.includes(book.id) ? styles.selectedRow : ''}>
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={selectedBooks.includes(book.id)}
+                            onChange={() => toggleSelectBook(book.id)}
+                            style={{ cursor: 'pointer', width: 16, height: 16 }}
+                          />
+                        </td>
                         <td><strong>{book.title}</strong></td>
                         <td>{book.author}</td>
                         <td><span className="badge badge-gold">{book.category}</span></td>
