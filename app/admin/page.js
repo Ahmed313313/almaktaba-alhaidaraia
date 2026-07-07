@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiPlus, FiEdit2, FiTrash2, FiX, FiEye, FiPackage, FiBook, FiLogOut, FiImage } from 'react-icons/fi';
+import { FiPlus, FiEdit2, FiTrash2, FiX, FiEye, FiPackage, FiBook, FiLogOut, FiImage, FiArchive } from 'react-icons/fi';
 import { CATEGORIES } from '../lib/supabase';
 import { formatPrice } from '../lib/utils';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [orderFilter, setOrderFilter] = useState('active');
 
   // Data states
   const [books, setBooks] = useState([]);
@@ -191,6 +192,23 @@ export default function AdminPage() {
     }
   };
 
+  // ===== Order Delete =====
+  const handleDeleteOrder = async (order) => {
+    if (!confirm(`هل أنت متأكد من حذف الطلب #${order.orderNumber || order.id.slice(-6)}؟`)) return;
+    try {
+      const res = await fetch(`/api/orders?id=${order.id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('تم حذف الطلب ✅');
+        fetchAll();
+      } else {
+        toast.error(data.error);
+      }
+    } catch {
+      toast.error('حدث خطأ');
+    }
+  };
+
   // ===== LOGIN PAGE =====
   if (!isLoggedIn) {
     return (
@@ -252,6 +270,7 @@ export default function AdminPage() {
           { id: 'dashboard', label: 'لوحة القيادة', icon: <FiEye /> },
           { id: 'books', label: 'إدارة الكتب', icon: <FiBook /> },
           { id: 'orders', label: 'الطلبات', icon: <FiPackage /> },
+          { id: 'history', label: 'السجل', icon: <FiArchive /> },
         ].map(tab => (
           <button
             key={tab.id}
@@ -519,66 +538,136 @@ export default function AdminPage() {
           {/* ===== ORDERS TAB ===== */}
           {activeTab === 'orders' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 style={{ marginBottom: 'var(--spacing-xl)' }}>📦 الطلبات ({orders.length})</h2>
+              <div className={styles.cardHeader}>
+                <h2>📦 الطلبات النشطة ({orders.filter(o => !['تم التسليم', 'ملغي'].includes(o.status)).length})</h2>
+              </div>
 
-              {orders.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">📦</div>
-                  <h3>لا توجد طلبات بعد</h3>
-                  <p>ستظهر الطلبات هنا عندما يطلب الزبائن من الموقع</p>
-                </div>
-              ) : (
-                <div className={styles.ordersList}>
-                  {orders.map(order => (
-                    <div key={order.id} className={styles.orderCard}>
-                      <div className={styles.orderHeader}>
-                        <div>
-                          <span className={styles.orderId}>طلب #{order.orderNumber || order.id.slice(-6)}</span>
-                          <span className={styles.orderDate}>{new Date(order.createdAt).toLocaleString('ar-IQ')}</span>
+              {(() => {
+                const activeOrders = orders.filter(o => !['تم التسليم', 'ملغي'].includes(o.status));
+                return activeOrders.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">📦</div>
+                    <h3>لا توجد طلبات نشطة</h3>
+                    <p>ستظهر الطلبات هنا عندما يطلب الزبائن من الموقع</p>
+                  </div>
+                ) : (
+                  <div className={styles.ordersList}>
+                    {activeOrders.map(order => (
+                      <div key={order.id} className={styles.orderCard}>
+                        <div className={styles.orderHeader}>
+                          <div>
+                            <span className={styles.orderId}>طلب #{order.orderNumber || order.id.slice(-6)}</span>
+                            <span className={styles.orderDate}>{new Date(order.createdAt).toLocaleString('ar-IQ')}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <select
+                              value={order.status}
+                              onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                              className={styles.statusSelect}
+                            >
+                              <option value="جديد">🔴 جديد</option>
+                              <option value="قيد المعالجة">🟡 قيد المعالجة</option>
+                              <option value="تم الشحن">🔵 تم الشحن</option>
+                              <option value="تم التسليم">🟢 تم التسليم</option>
+                              <option value="ملغي">⚫ ملغي</option>
+                            </select>
+                            <button onClick={() => handleDeleteOrder(order)} className={styles.deleteBtn} title="حذف الطلب">
+                              <FiTrash2 />
+                            </button>
+                          </div>
                         </div>
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                          className={styles.statusSelect}
-                        >
-                          <option value="جديد">🔴 جديد</option>
-                          <option value="قيد المعالجة">🟡 قيد المعالجة</option>
-                          <option value="تم الشحن">🔵 تم الشحن</option>
-                          <option value="تم التسليم">🟢 تم التسليم</option>
-                          <option value="ملغي">⚫ ملغي</option>
-                        </select>
-                      </div>
-                      <div className={styles.orderBody}>
-                        <div className={styles.orderCustomer}>
-                          <p><strong>👤 الزبون:</strong> {order.customerName}</p>
-                          <p><strong>📱 الهاتف:</strong> <span dir="ltr">{order.phone}</span></p>
-                          <p><strong>📍 المحافظة:</strong> {order.province}</p>
-                          <p><strong>🏠 العنوان:</strong> {order.address}</p>
-                          {order.notes && <p><strong>📝 ملاحظات:</strong> {order.notes}</p>}
-                        </div>
-                        <div className={styles.orderItems}>
-                          <h4>الكتب المطلوبة:</h4>
-                          {order.items?.map((item, i) => (
-                            <div key={i} className={styles.orderItem}>
-                              <span>📖 {item.title}</span>
-                              <span>×{item.quantity}</span>
-                              <span className={styles.priceCell}>{formatPrice(item.price * item.quantity)} د.ع</span>
+                        <div className={styles.orderBody}>
+                          <div className={styles.orderCustomer}>
+                            <p><strong>👤 الزبون:</strong> {order.customerName}</p>
+                            <p><strong>📱 الهاتف:</strong> <span dir="ltr">{order.phone}</span></p>
+                            <p><strong>📍 المحافظة:</strong> {order.province}</p>
+                            <p><strong>🏠 العنوان:</strong> {order.address}</p>
+                            {order.notes && <p><strong>📝 ملاحظات:</strong> {order.notes}</p>}
+                          </div>
+                          <div className={styles.orderItems}>
+                            <h4>الكتب المطلوبة:</h4>
+                            {order.items?.map((item, i) => (
+                              <div key={i} className={styles.orderItem}>
+                                <span>📖 {item.title}</span>
+                                <span>×{item.quantity}</span>
+                                <span className={styles.priceCell}>{formatPrice(item.price * item.quantity)} د.ع</span>
+                              </div>
+                            ))}
+                            <div className={styles.orderItem} style={{ borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
+                              <span>🚚 أجرة التوصيل ({order.province})</span>
+                              <span></span>
+                              <span className={styles.priceCell}>{formatPrice(order.deliveryPrice || 0)} د.ع</span>
                             </div>
-                          ))}
-                          <div className={styles.orderItem} style={{ borderTop: '1px solid var(--color-border)', paddingTop: 8 }}>
-                            <span>🚚 أجرة التوصيل ({order.province})</span>
-                            <span></span>
-                            <span className={styles.priceCell}>{formatPrice(order.deliveryPrice || 0)} د.ع</span>
-                          </div>
-                          <div className={styles.orderTotal}>
-                            <strong>المجموع الكلي: {formatPrice(order.total)} د.ع</strong>
+                            <div className={styles.orderTotal}>
+                              <strong>المجموع الكلي: {formatPrice(order.total)} د.ع</strong>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
+            </motion.div>
+          )}
+
+          {/* ===== HISTORY TAB ===== */}
+          {activeTab === 'history' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className={styles.cardHeader}>
+                <h2>📋 سجل الطلبات ({orders.filter(o => ['تم التسليم', 'ملغي'].includes(o.status)).length})</h2>
+              </div>
+
+              {(() => {
+                const historyOrders = orders.filter(o => ['تم التسليم', 'ملغي'].includes(o.status));
+                return historyOrders.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">📋</div>
+                    <h3>لا يوجد سجل بعد</h3>
+                    <p>الطلبات المكتملة والملغية ستظهر هنا</p>
+                  </div>
+                ) : (
+                  <div className={styles.ordersList}>
+                    {historyOrders.map(order => (
+                      <div key={order.id} className={styles.orderCard} style={{ opacity: order.status === 'ملغي' ? 0.6 : 1 }}>
+                        <div className={styles.orderHeader}>
+                          <div>
+                            <span className={styles.orderId}>طلب #{order.orderNumber || order.id.slice(-6)}</span>
+                            <span className={styles.orderDate}>{new Date(order.createdAt).toLocaleString('ar-IQ')}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <span className={`badge ${order.status === 'تم التسليم' ? 'badge-success' : 'badge-danger'}`}>
+                              {order.status === 'تم التسليم' ? '🟢 تم التسليم' : '⚫ ملغي'}
+                            </span>
+                            <button onClick={() => handleDeleteOrder(order)} className={styles.deleteBtn} title="حذف من السجل">
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </div>
+                        <div className={styles.orderBody}>
+                          <div className={styles.orderCustomer}>
+                            <p><strong>👤 الزبون:</strong> {order.customerName}</p>
+                            <p><strong>📱 الهاتف:</strong> <span dir="ltr">{order.phone}</span></p>
+                            <p><strong>📍 المحافظة:</strong> {order.province}</p>
+                          </div>
+                          <div className={styles.orderItems}>
+                            {order.items?.map((item, i) => (
+                              <div key={i} className={styles.orderItem}>
+                                <span>📖 {item.title}</span>
+                                <span>×{item.quantity}</span>
+                                <span className={styles.priceCell}>{formatPrice(item.price * item.quantity)} د.ع</span>
+                              </div>
+                            ))}
+                            <div className={styles.orderTotal}>
+                              <strong>المجموع: {formatPrice(order.total)} د.ع</strong>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </motion.div>
           )}
         </>

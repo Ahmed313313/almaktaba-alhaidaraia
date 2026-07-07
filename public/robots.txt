@@ -1,6 +1,10 @@
+# المكتبة الحيدرية - Robots.txt
 User-agent: *
 Allow: /
+
+# Sitemap
+Sitemap: https://almaktaba-alhaidaraia.vercel.app/sitemap.xml
+
+# Block admin page from indexing
 Disallow: /admin
 Disallow: /api/
-
-Sitemap: https://almaktaba-alhaidaraia.vercel.app/sitemap.xml

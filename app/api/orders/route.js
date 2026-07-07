@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Vercel uses read-only filesystem, so we use /tmp for writes
+const IS_VERCEL = process.env.VERCEL === '1';
+const DATA_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 
 // أسعار التوصيل
@@ -135,6 +137,31 @@ export async function PATCH(request) {
     writeOrders(orders);
 
     return NextResponse.json({ success: true, order: orders[index] });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE - حذف طلب
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ success: false, error: 'معرف الطلب مطلوب' }, { status: 400 });
+    }
+
+    const orders = readOrders();
+    const filtered = orders.filter(o => o.id !== id);
+
+    if (filtered.length === orders.length) {
+      return NextResponse.json({ success: false, error: 'الطلب غير موجود' }, { status: 404 });
+    }
+
+    writeOrders(filtered);
+
+    return NextResponse.json({ success: true, message: 'تم حذف الطلب بنجاح' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

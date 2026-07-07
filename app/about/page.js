@@ -76,7 +76,7 @@ export default function AboutPage() {
         <div className="container">
           <div className={styles.statsBar}>
             <div className={styles.statItem}>
-              <strong>500+</strong>
+              <strong>25+</strong>
               <span>عنوان متوفر</span>
             </div>
             <div className={styles.statItem}>
@@ -84,12 +84,12 @@ export default function AboutPage() {
               <span>محافظة نغطيها</span>
             </div>
             <div className={styles.statItem}>
-              <strong>1000+</strong>
-              <span>طلب أُنجز</span>
+              <strong>24/7</strong>
+              <span>طلب أونلاين</span>
             </div>
             <div className={styles.statItem}>
-              <strong>12</strong>
-              <span>تصنيف متنوع</span>
+              <strong>متنوعة</strong>
+              <span>تصنيفات الكتب</span>
             </div>
           </div>
         </div>

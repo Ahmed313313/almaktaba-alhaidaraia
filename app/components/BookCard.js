@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FiShoppingCart, FiEye } from 'react-icons/fi';
 import { useCart } from './CartProvider';
 import { formatPrice, getStockStatus } from '../lib/utils';
+import { MiniRating } from './BookReviews';
 import toast from 'react-hot-toast';
 import styles from './BookCard.module.css';
 
@@ -66,6 +67,7 @@ export default function BookCard({ book }) {
           <Link href={`/book/${book.id}`}>{book.title}</Link>
         </h3>
         <p className={styles.author}>{book.author}</p>
+        <MiniRating bookId={book.id} />
         
         <div className={styles.footer}>
           <div className={styles.priceSection}>

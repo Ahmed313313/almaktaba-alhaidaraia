@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiSearch, FiShoppingCart, FiMenu, FiX } from 'react-icons/fi';
 import { useCart } from './CartProvider';
+import ThemeToggle from './ThemeToggle';
 import styles from './Header.module.css';
 
 export default function Header() {
@@ -82,6 +83,9 @@ export default function Header() {
             >
               <FiSearch />
             </button>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Cart */}
             <button

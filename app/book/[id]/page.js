@@ -8,6 +8,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { useCart } from '../../components/CartProvider';
 import { DEMO_BOOKS } from '../../lib/supabase';
 import { formatPrice, getStockStatus } from '../../lib/utils';
+import BookReviews from '../../components/BookReviews';
 import toast from 'react-hot-toast';
 import styles from './page.module.css';
 
@@ -272,6 +273,11 @@ export default function BookPage({ params }) {
             </button>
           </div>
         </motion.div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="container">
+        <BookReviews bookId={book.id} />
       </div>
 
       {/* Related Books */}

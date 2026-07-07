@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Vercel uses read-only filesystem, so we use /tmp for writes
+const IS_VERCEL = process.env.VERCEL === '1';
+const DATA_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
 const VISITORS_FILE = path.join(DATA_DIR, 'visitors.json');
 
 function ensureDataDir() {

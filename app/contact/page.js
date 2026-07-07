@@ -85,7 +85,7 @@ export default function ContactPage() {
                       <span>@almaktaba_alhaidaraia1</span>
                     </div>
                   </a>
-                  <a href="https://wa.me/9647700000000" target="_blank" rel="noopener noreferrer" className={`${styles.socialCard} ${styles.whatsappCard}`} id="contact-whatsapp">
+                  <a href="https://wa.me/9647725754850" target="_blank" rel="noopener noreferrer" className={`${styles.socialCard} ${styles.whatsappCard}`} id="contact-whatsapp">
                     <FaWhatsapp className={styles.socialIcon} />
                     <div>
                       <strong>واتساب</strong>
@@ -103,7 +103,7 @@ export default function ContactPage() {
                 <h3>النجف الأشرف - العراق</h3>
                 <p>يمكنكم زيارتنا في المكتبة أو طلب الكتب عبر الموقع مع التوصيل لجميع المحافظات</p>
                 <a
-                  href="https://wa.me/9647700000000?text=مرحباً، أريد الاستفسار عن موقع المكتبة"
+                  href="https://wa.me/9647725754850?text=مرحباً، أريد الاستفسار عن موقع المكتبة"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-primary"

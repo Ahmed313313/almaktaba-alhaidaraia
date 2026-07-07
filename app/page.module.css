@@ -373,8 +373,24 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* Horizontal scroll for books on mobile */
   .booksGrid {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    scrollbar-width: none;
+  }
+
+  .booksGrid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .booksGrid > * {
+    flex: 0 0 260px;
+    scroll-snap-align: start;
   }
 
   .ctaContent {
@@ -388,10 +404,8 @@
     gap: var(--spacing-sm);
   }
 
-  .booksGrid {
-    grid-template-columns: 1fr;
-    max-width: 360px;
-    margin: 0 auto;
+  .booksGrid > * {
+    flex: 0 0 220px;
   }
 
   .heroActions {

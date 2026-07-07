@@ -37,11 +37,21 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/logo.png" type="image/png" />
         <meta name="theme-color" content="#1a1a2e" />
         <meta name="google-site-verification" content="" />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var t = localStorage.getItem('theme');
+              if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+              }
+            } catch(e) {}
+          })();
+        `}} />
         {/* Schema.org - LocalBusiness */}
         <script
           type="application/ld+json"

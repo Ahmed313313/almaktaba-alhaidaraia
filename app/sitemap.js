@@ -1,5 +1,5 @@
 export default function sitemap() {
-  const baseUrl = 'https://almaktaba-alhaidaraia.web.app';
+  const baseUrl = 'https://almaktaba-alhaidaraia.vercel.app';
 
   const staticPages = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },

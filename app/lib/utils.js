@@ -19,7 +19,7 @@ export function generateSlug(title) {
 }
 
 export function getWhatsAppLink(orderDetails) {
-  const phone = '9647700000000'; // Replace with actual WhatsApp number
+  const phone = '9647725754850';
   const message = encodeURIComponent(orderDetails);
   return `https://wa.me/${phone}?text=${message}`;
 }

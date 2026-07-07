@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Vercel uses read-only filesystem, so we use /tmp for writes
+// On local dev, we use the data directory
+const IS_VERCEL = process.env.VERCEL === '1';
+const DATA_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
 const BOOKS_FILE = path.join(DATA_DIR, 'books.json');
 
 // Default demo books data - all 12 books
