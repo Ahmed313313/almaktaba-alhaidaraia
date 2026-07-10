@@ -29,6 +29,10 @@
   --color-danger: #e74c3c;
   --color-warning: #f39c12;
   --color-info: #3498db;
+  /* Footer always stays dark regardless of theme */
+  --color-footer-bg: #1a1a2e;
+  --color-footer-text: rgba(245, 240, 232, 0.75);
+  --color-footer-text-dim: rgba(245, 240, 232, 0.5);
 
   /* Typography */
   --font-main: 'IBM Plex Sans Arabic', sans-serif;
@@ -74,6 +78,9 @@
   --color-primary: #e8dcc8;
   --color-primary-light: #3a3a5c;
   --color-primary-dark: #0a0a14;
+  --color-secondary: #d4a853;
+  --color-secondary-light: #e8c97a;
+  --color-secondary-dark: #c49a40;
   --color-bg: #121218;
   --color-bg-warm: #1a1a24;
   --color-bg-card: #1e1e2a;
@@ -84,6 +91,10 @@
   --color-text-on-dark: #f5f0e8;
   --color-border: #2a2a3e;
   --color-border-light: #242434;
+  /* Footer stays dark in dark mode too */
+  --color-footer-bg: #0e0e16;
+  --color-footer-text: rgba(245, 240, 232, 0.8);
+  --color-footer-text-dim: rgba(245, 240, 232, 0.5);
 
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);

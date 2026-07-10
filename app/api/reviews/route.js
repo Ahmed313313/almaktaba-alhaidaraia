@@ -1,77 +1,58 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
-const IS_VERCEL = process.env.VERCEL === '1';
-const DATA_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
-const REVIEWS_FILE = path.join(DATA_DIR, 'reviews.json');
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(REVIEWS_FILE)) fs.writeFileSync(REVIEWS_FILE, '[]', 'utf-8');
+function mapReview(r) {
+  return { ...r, bookId: r.book_id, createdAt: r.created_at };
 }
 
-function readReviews() {
-  ensureDataDir();
-  try { return JSON.parse(fs.readFileSync(REVIEWS_FILE, 'utf-8')); }
-  catch { return []; }
-}
-
-function writeReviews(reviews) {
-  ensureDataDir();
-  fs.writeFileSync(REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
-}
-
-// GET - جلب التقييمات (لكتاب معين أو الكل)
+// GET - جلب التقييمات
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const bookId = searchParams.get('bookId');
-    const reviews = readReviews();
+
+    let query = supabase.from('reviews').select('*').order('created_at', { ascending: false });
+    if (bookId) query = query.eq('book_id', bookId);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const reviews = (data || []).map(mapReview);
 
     if (bookId) {
-      const bookReviews = reviews.filter(r => r.bookId === bookId);
-      const avg = bookReviews.length > 0
-        ? bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length
-        : 0;
+      const avg = reviews.length > 0
+        ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
       return NextResponse.json({
-        success: true,
-        reviews: bookReviews,
+        success: true, reviews,
         average: Math.round(avg * 10) / 10,
-        count: bookReviews.length
+        count: reviews.length,
       });
     }
-
     return NextResponse.json({ success: true, reviews });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
 
-// POST - إضافة تقييم جديد
+// POST - إضافة تقييم
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { bookId, name, rating, comment } = body;
-
-    if (!bookId || !name || !rating || rating < 1 || rating > 5) {
+    const { bookId, name, rating, comment } = await request.json();
+    if (!bookId || !name || !rating || rating < 1 || rating > 5)
       return NextResponse.json({ success: false, error: 'بيانات غير صحيحة' }, { status: 400 });
-    }
 
-    const reviews = readReviews();
-    const review = {
-      id: Date.now().toString(),
-      bookId,
-      name: name.trim(),
-      rating: Number(rating),
-      comment: comment?.trim() || '',
-      createdAt: new Date().toISOString(),
-    };
+    const { data, error } = await supabase.from('reviews').insert([{
+      book_id: bookId, name: name.trim(),
+      rating: Number(rating), comment: comment?.trim() || '',
+    }]).select().single();
 
-    reviews.unshift(review);
-    writeReviews(reviews);
-
-    return NextResponse.json({ success: true, review });
+    if (error) throw error;
+    return NextResponse.json({ success: true, review: mapReview(data) });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -84,12 +65,8 @@ export async function DELETE(request) {
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ success: false, error: 'معرف التقييم مطلوب' }, { status: 400 });
 
-    const reviews = readReviews();
-    const filtered = reviews.filter(r => r.id !== id);
-    if (filtered.length === reviews.length) {
-      return NextResponse.json({ success: false, error: 'التقييم غير موجود' }, { status: 404 });
-    }
-    writeReviews(filtered);
+    const { error } = await supabase.from('reviews').delete().eq('id', id);
+    if (error) throw error;
     return NextResponse.json({ success: true, message: 'تم حذف التقييم' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

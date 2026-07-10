@@ -15,10 +15,15 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [orderFilter, setOrderFilter] = useState('active');
   const [selectedBooks, setSelectedBooks] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const [bulkCategory, setBulkCategory] = useState('');
 
   // Data states
   const [books, setBooks] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [wishlist, setWishlist] = useState([]);
   const [visitors, setVisitors] = useState({ total: 0, today: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +31,8 @@ export default function AdminPage() {
   const [showBookForm, setShowBookForm] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [bookForm, setBookForm] = useState({
-    title: '', author: '', publisher: '', category: '', price: '', stock: '', description: '', cover_url: '', images: ['']
+    title: '', author: '', publisher: '', category: '', price: '', stock: '',
+    description: '', cover_url: '', images: [''], label: ''
   });
 
   useEffect(() => {
@@ -41,18 +47,24 @@ export default function AdminPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [booksRes, ordersRes, visitorsRes] = await Promise.all([
+      const [booksRes, ordersRes, visitorsRes, reviewsRes, wishlistRes] = await Promise.all([
         fetch('/api/books'),
         fetch('/api/orders'),
         fetch('/api/visitors'),
+        fetch('/api/reviews'),
+        fetch('/api/wishlist'),
       ]);
       const booksData = await booksRes.json();
       const ordersData = await ordersRes.json();
       const visitorsData = await visitorsRes.json();
+      const reviewsData = await reviewsRes.json();
+      const wishlistData = await wishlistRes.json();
 
       if (booksData.success) setBooks(booksData.books);
       if (ordersData.success) setOrders(ordersData.orders);
       if (visitorsData.success) setVisitors({ total: visitorsData.total, today: visitorsData.today });
+      if (reviewsData.success) setReviews(reviewsData.reviews);
+      if (wishlistData.success) setWishlist(wishlistData.wishlist || []);
     } catch (e) {
       console.error(e);
     }
@@ -77,7 +89,7 @@ export default function AdminPage() {
 
   // ===== Book CRUD =====
   const resetBookForm = () => {
-    setBookForm({ title: '', author: '', publisher: '', category: '', price: '', stock: '', description: '', cover_url: '', images: [''] });
+    setBookForm({ title: '', author: '', publisher: '', category: '', price: '', stock: '', description: '', cover_url: '', images: [''], label: '' });
     setEditingBook(null);
     setShowBookForm(false);
   };
@@ -88,7 +100,7 @@ export default function AdminPage() {
       title: book.title, author: book.author, publisher: book.publisher || '',
       category: book.category, price: book.price.toString(), stock: book.stock.toString(),
       description: book.description || '', cover_url: book.cover_url || '',
-      images: bookImages
+      images: bookImages, label: book.label || ''
     });
     setEditingBook(book);
     setShowBookForm(true);
@@ -176,24 +188,54 @@ export default function AdminPage() {
     }
   };
 
+  // ===== Drag & Drop Image =====
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setBookForm(p => ({ ...p, cover_url: ev.target.result }));
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFileInput = (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setBookForm(p => ({ ...p, cover_url: ev.target.result }));
+      reader.readAsDataURL(file);
+    }
+  };
+
   // ===== Bulk Delete Books =====
   const handleBulkDelete = async () => {
     if (selectedBooks.length === 0) return;
     if (!confirm(`هل أنت متأكد من حذف ${selectedBooks.length} كتاب؟ هذا الإجراء لا يمكن التراجع عنه!`)) return;
-    let deletedCount = 0;
-    let failedCount = 0;
-    for (const id of selectedBooks) {
-      try {
-        const res = await fetch(`/api/books?id=${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) deletedCount++;
-        else failedCount++;
-      } catch { failedCount++; }
-    }
-    if (deletedCount > 0) toast.success(`تم حذف ${deletedCount} كتاب ✅`);
-    if (failedCount > 0) toast.error(`فشل حذف ${failedCount} كتاب`);
+    try {
+      const res = await fetch(`/api/books?ids=${selectedBooks.join(',')}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) toast.success(`تم حذف ${selectedBooks.length} كتاب ✅`);
+      else toast.error(data.error || 'فشل الحذف');
+    } catch { toast.error('حدث خطأ في الاتصال'); }
     setSelectedBooks([]);
     fetchAll();
+  };
+
+  // ===== Bulk Category Change =====
+  const handleBulkCategoryChange = async () => {
+    if (selectedBooks.length === 0 || !bulkCategory) return;
+    try {
+      const res = await fetch('/api/books', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedBooks, category: bulkCategory }),
+      });
+      const data = await res.json();
+      if (data.success) { toast.success(`تم تحديث التصنيف لـ ${selectedBooks.length} كتاب ✅`); setSelectedBooks([]); setBulkCategory(''); fetchAll(); }
+      else toast.error(data.error);
+    } catch { toast.error('حدث خطأ'); }
   };
 
   const toggleSelectBook = (id) => {
@@ -202,11 +244,15 @@ export default function AdminPage() {
     );
   };
 
+  const filteredBooks = categoryFilter
+    ? books.filter(b => b.category === categoryFilter)
+    : books;
+
   const toggleSelectAll = () => {
-    if (selectedBooks.length === books.length) {
+    if (selectedBooks.length === filteredBooks.length) {
       setSelectedBooks([]);
     } else {
-      setSelectedBooks(books.map(b => b.id));
+      setSelectedBooks(filteredBooks.map(b => b.id));
     }
   };
 
@@ -307,6 +353,7 @@ export default function AdminPage() {
           { id: 'books', label: 'إدارة الكتب', icon: <FiBook /> },
           { id: 'orders', label: 'الطلبات', icon: <FiPackage /> },
           { id: 'history', label: 'السجل', icon: <FiArchive /> },
+          { id: 'reviews', label: 'التقييمات', icon: '⭐' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -421,17 +468,49 @@ export default function AdminPage() {
           {activeTab === 'books' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className={styles.cardHeader}>
-                <h2>📚 إدارة الكتب ({books.length})</h2>
+                <h2>📚 إدارة الكتب ({filteredBooks.length}{categoryFilter ? ` من ${books.length}` : ''})</h2>
                 <button className="btn btn-primary" onClick={() => { resetBookForm(); setShowBookForm(true); }} id="add-new-book">
                   <FiPlus /> إضافة كتاب جديد
                 </button>
               </div>
 
-              {/* Bulk Delete Bar */}
+              {/* Category Filter */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                <button
+                  className={`btn btn-sm ${categoryFilter === '' ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => setCategoryFilter('')}
+                >الكل ({books.length})</button>
+                {CATEGORIES.map(cat => {
+                  const count = books.filter(b => b.category === cat.name).length;
+                  if (count === 0) return null;
+                  return (
+                    <button
+                      key={cat.slug}
+                      className={`btn btn-sm ${categoryFilter === cat.name ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setCategoryFilter(cat.name)}
+                    >{cat.icon} {cat.name} ({count})</button>
+                  );
+                })}
+              </div>
+
+              {/* Bulk Actions Bar */}
               {selectedBooks.length > 0 && (
                 <div className={styles.bulkBar}>
                   <span>✅ تم تحديد <strong>{selectedBooks.length}</strong> كتاب</span>
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <select
+                      value={bulkCategory}
+                      onChange={e => setBulkCategory(e.target.value)}
+                      style={{ padding: '0.4rem 0.75rem', borderRadius: 6, fontSize: '0.85rem' }}
+                    >
+                      <option value=''>تغيير التصنيف...</option>
+                      {CATEGORIES.map(cat => <option key={cat.slug} value={cat.name}>{cat.icon} {cat.name}</option>)}
+                    </select>
+                    {bulkCategory && (
+                      <button className="btn btn-sm btn-outline" onClick={handleBulkCategoryChange}>
+                        ✏️ تطبيق التصنيف
+                      </button>
+                    )}
                     <button className="btn btn-sm btn-outline" onClick={() => setSelectedBooks([])}>
                       إلغاء التحديد
                     </button>
@@ -485,14 +564,63 @@ export default function AdminPage() {
                         </div>
                       </div>
                       <div className="form-group">
+                        <label>🏷️ ملصق الكتاب (اختياري)</label>
+                        <select value={bookForm.label} onChange={e => setBookForm(p => ({ ...p, label: e.target.value }))}>
+                          <option value="">— بدون ملصق —</option>
+                          <option value="جديد">🆕 جديد</option>
+                          <option value="الأكثر طلباً">🔥 الأكثر طلباً</option>
+                          <option value="موصى به">⭐ موصى به</option>
+                        </select>
+                      </div>
+                      <div className="form-group">
                         <label>وصف الكتاب</label>
                         <textarea value={bookForm.description} onChange={e => setBookForm(p => ({ ...p, description: e.target.value }))} placeholder="وصف مختصر عن الكتاب..." rows={3} />
                       </div>
 
-                      {/* صور الكتاب */}
+                      {/* صورة الغلاف - Drag & Drop */}
                       <div className="form-group">
                         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <FiImage /> صور الكتاب (روابط URL)
+                          <FiImage /> صورة الغلاف
+                        </label>
+                        <div
+                          onDrop={handleDrop}
+                          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                          onDragLeave={() => setDragOver(false)}
+                          style={{
+                            border: `2px dashed ${dragOver ? 'var(--color-secondary)' : 'var(--color-border)'}`,
+                            borderRadius: 10, padding: 16, textAlign: 'center', marginBottom: 8,
+                            background: dragOver ? 'rgba(212,168,83,0.08)' : 'var(--color-bg-warm)',
+                            transition: 'all 0.2s', cursor: 'pointer',
+                          }}
+                          onClick={() => document.getElementById('cover-file-input').click()}
+                        >
+                          {bookForm.cover_url ? (
+                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                              <img src={bookForm.cover_url} alt="غلاف" style={{ maxHeight: 120, borderRadius: 6, maxWidth: '100%' }} />
+                              <button type="button" onClick={e => { e.stopPropagation(); setBookForm(p => ({ ...p, cover_url: '' })); }}
+                                style={{ position: 'absolute', top: -8, left: -8, background: 'var(--color-danger)', color: 'white', border: 'none', borderRadius: '50%', width: 24, height: 24, cursor: 'pointer', fontSize: 12 }}>✕</button>
+                            </div>
+                          ) : (
+                            <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                              <div style={{ fontSize: '2rem', marginBottom: 4 }}>🖼️</div>
+                              <div>اسحب صورة هنا أو اضغط للاختيار</div>
+                            </div>
+                          )}
+                        </div>
+                        <input id="cover-file-input" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileInput} />
+                        <input
+                          type="text"
+                          value={bookForm.cover_url.startsWith('data:') ? '' : bookForm.cover_url}
+                          onChange={e => setBookForm(p => ({ ...p, cover_url: e.target.value }))}
+                          placeholder="أو أدخل رابط URL للصورة (https://...)"
+                          style={{ width: '100%', marginTop: 8 }}
+                        />
+                      </div>
+
+                      {/* صور إضافية */}
+                      <div className="form-group">
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <FiImage /> صور إضافية (روابط URL)
                         </label>
                         {bookForm.images.map((img, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
@@ -504,24 +632,14 @@ export default function AdminPage() {
                               style={{ flex: 1 }}
                             />
                             {bookForm.images.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveImageField(idx)}
-                                className={styles.deleteBtn}
-                                title="حذف الصورة"
-                                style={{ width: 36, height: 36, flexShrink: 0 }}
-                              >
+                              <button type="button" onClick={() => handleRemoveImageField(idx)}
+                                className={styles.deleteBtn} title="حذف" style={{ width: 36, height: 36, flexShrink: 0 }}>
                                 <FiX />
                               </button>
                             )}
                           </div>
                         ))}
-                        <button
-                          type="button"
-                          onClick={handleAddImageField}
-                          className="btn btn-sm btn-outline"
-                          style={{ marginTop: 4 }}
-                        >
+                        <button type="button" onClick={handleAddImageField} className="btn btn-sm btn-outline" style={{ marginTop: 4 }}>
                           <FiPlus /> إضافة صورة أخرى
                         </button>
                       </div>
@@ -543,9 +661,8 @@ export default function AdminPage() {
                   <thead>
                     <tr>
                       <th style={{ width: 40 }}>
-                        <input
-                          type="checkbox"
-                          checked={books.length > 0 && selectedBooks.length === books.length}
+                        <input type="checkbox"
+                          checked={filteredBooks.length > 0 && filteredBooks.every(b => selectedBooks.includes(b.id))}
                           onChange={toggleSelectAll}
                           title="تحديد الكل"
                           style={{ cursor: 'pointer', width: 16, height: 16 }}
@@ -561,11 +678,14 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {books.map(book => (
+                    {filteredBooks.length === 0 ? (
+                      <tr><td colSpan={8} style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-muted)' }}>
+                        لا توجد كتب في هذا التصنيف
+                      </td></tr>
+                    ) : filteredBooks.map(book => (
                       <tr key={book.id} className={selectedBooks.includes(book.id) ? styles.selectedRow : ''}>
                         <td>
-                          <input
-                            type="checkbox"
+                          <input type="checkbox"
                             checked={selectedBooks.includes(book.id)}
                             onChange={() => toggleSelectBook(book.id)}
                             style={{ cursor: 'pointer', width: 16, height: 16 }}
@@ -587,12 +707,8 @@ export default function AdminPage() {
                         </td>
                         <td>
                           <div className={styles.actionBtns}>
-                            <button onClick={() => handleEditBook(book)} className={styles.editBtn} title="تعديل">
-                              <FiEdit2 />
-                            </button>
-                            <button onClick={() => handleDeleteBook(book)} className={styles.deleteBtn} title="حذف">
-                              <FiTrash2 />
-                            </button>
+                            <button onClick={() => handleEditBook(book)} className={styles.editBtn} title="تعديل"><FiEdit2 /></button>
+                            <button onClick={() => handleDeleteBook(book)} className={styles.deleteBtn} title="حذف"><FiTrash2 /></button>
                           </div>
                         </td>
                       </tr>
@@ -736,6 +852,73 @@ export default function AdminPage() {
                   </div>
                 );
               })()}
+            </motion.div>
+          )}
+          {activeTab === 'reviews' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <div className={styles.cardHeader}>
+                <h2>⭐ إدارة التقييمات ({reviews.length})</h2>
+              </div>
+
+              {/* Wishlist */}
+              {wishlist.length > 0 && (
+                <div style={{ marginBottom: 24, padding: 16, background: 'var(--color-bg-warm)', borderRadius: 12, border: '1px solid var(--color-border-light)' }}>
+                  <h3 style={{ marginBottom: 12 }}>🔔 قائمة الرغبات ({wishlist.reduce((s, w) => s + w.count, 0)} طلب)</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {wishlist.map(w => (
+                      <div key={w.bookId} style={{ background: 'var(--color-bg-card)', padding: '6px 14px', borderRadius: 20, fontSize: '0.85rem', border: '1px solid var(--color-border)' }}>
+                        📖 {w.bookTitle} <strong style={{ color: 'var(--color-secondary-dark)' }}>×{w.count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {reviews.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">⭐</div>
+                  <h3>لا توجد تقييمات بعد</h3>
+                  <p>ستظهر تقييمات الزبائن هنا</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {reviews.map(review => (
+                    <div key={review.id} style={{ background: 'var(--color-bg-card)', padding: 16, borderRadius: 12, border: '1px solid var(--color-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--color-secondary), var(--color-secondary-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, flexShrink: 0 }}>
+                            {review.name?.charAt(0)}
+                          </div>
+                          <div>
+                            <strong style={{ display: 'block' }}>{review.name}</strong>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                              {'⭐'.repeat(review.rating)} • {new Date(review.createdAt || review.created_at).toLocaleDateString('ar-IQ')}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginRight: 'auto' }}>
+                            كتاب: {books.find(b => b.id === (review.bookId || review.book_id))?.title || 'غير معروف'}
+                          </span>
+                        </div>
+                        {review.comment && <p style={{ fontSize: '0.9rem', color: 'var(--color-text-light)', paddingRight: 46 }}>{review.comment}</p>}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!confirm('هل تريد حذف هذا التقييم؟')) return;
+                          const res = await fetch(`/api/reviews?id=${review.id}`, { method: 'DELETE' });
+                          const d = await res.json();
+                          if (d.success) { toast.success('تم حذف التقييم'); fetchAll(); }
+                          else toast.error(d.error);
+                        }}
+                        className={styles.deleteBtn}
+                        title="حذف التقييم"
+                        style={{ flexShrink: 0 }}
+                      >
+                        <FiTrash2 />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </>

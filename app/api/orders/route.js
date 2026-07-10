@@ -1,68 +1,59 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
-// Vercel uses read-only filesystem, so we use /tmp for writes
-const IS_VERCEL = process.env.VERCEL === '1';
-const DATA_DIR = IS_VERCEL ? '/tmp' : path.join(process.cwd(), 'data');
-const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 // أسعار التوصيل
 const DELIVERY_PRICES = {
   'البصرة': 3000,
-  'default': 5000, // باقي المحافظات
+  'default': 5000,
 };
 
 function getDeliveryPrice(province) {
   return DELIVERY_PRICES[province] || DELIVERY_PRICES['default'];
 }
 
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(ORDERS_FILE)) {
-    fs.writeFileSync(ORDERS_FILE, JSON.stringify([], null, 2), 'utf-8');
-  }
+// تحويل من snake_case (Supabase) إلى camelCase (Frontend)
+function mapOrder(o) {
+  return {
+    id: o.id,
+    orderNumber: o.order_number,
+    customerName: o.customer_name,
+    phone: o.phone,
+    province: o.province,
+    address: o.address,
+    notes: o.notes,
+    items: o.items,
+    itemsTotal: o.items_total,
+    deliveryPrice: o.delivery_price,
+    total: o.total,
+    status: o.status,
+    createdAt: o.created_at,
+  };
 }
 
-function readOrders() {
-  ensureDataDir();
-  try {
-    const data = fs.readFileSync(ORDERS_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-function writeOrders(orders) {
-  ensureDataDir();
-  fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
-}
-
-// توليد رقم طلب يبدأ من 100
-function generateOrderNumber(orders) {
-  if (orders.length === 0) return 100;
-  const maxNum = Math.max(...orders.map(o => o.orderNumber || 99));
-  return Math.max(maxNum + 1, 100);
-}
-
-// GET - جلب الطلبات (للإدارة أو للمستخدم بحسب رقم الهاتف)
+// GET - جلب الطلبات
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get('phone');
 
-    const orders = readOrders();
+    let query = supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    // إذا تم تمرير رقم هاتف، أرجع فقط طلبات هذا المستخدم
     if (phone) {
-      const userOrders = orders.filter(o => o.phone === phone);
-      return NextResponse.json({ success: true, orders: userOrders });
+      query = query.eq('phone', phone);
     }
 
-    // بدون هاتف = طلب من الأدمن = كل الطلبات
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const orders = (data || []).map(mapOrder);
     return NextResponse.json({ success: true, orders });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -73,9 +64,8 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { customerName, phone, province, address, notes, items, total } = body;
+    const { customerName, phone, province, address, notes, items } = body;
 
-    // Validation
     if (!customerName || !phone || !province || !address || !items || items.length === 0) {
       return NextResponse.json(
         { success: false, error: 'جميع الحقول المطلوبة يجب ملؤها' },
@@ -83,16 +73,12 @@ export async function POST(request) {
       );
     }
 
-    const orders = readOrders();
-    const orderNumber = generateOrderNumber(orders);
     const deliveryPrice = getDeliveryPrice(province);
     const itemsTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const grandTotal = itemsTotal + deliveryPrice;
+    const total = itemsTotal + deliveryPrice;
 
-    const order = {
-      id: Date.now().toString(),
-      orderNumber,
-      customerName,
+    const newOrder = {
+      customer_name: customerName,
       phone,
       province,
       address,
@@ -104,17 +90,20 @@ export async function POST(request) {
         price: item.price,
         quantity: item.quantity,
       })),
-      itemsTotal,
-      deliveryPrice,
-      total: grandTotal,
+      items_total: itemsTotal,
+      delivery_price: deliveryPrice,
+      total,
       status: 'جديد',
-      createdAt: new Date().toISOString(),
     };
 
-    orders.unshift(order); // أضف بالأول
-    writeOrders(orders);
+    const { data, error } = await supabase
+      .from('orders')
+      .insert([newOrder])
+      .select()
+      .single();
 
-    return NextResponse.json({ success: true, order });
+    if (error) throw error;
+    return NextResponse.json({ success: true, order: mapOrder(data) });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -126,17 +115,15 @@ export async function PATCH(request) {
     const body = await request.json();
     const { id, status } = body;
 
-    const orders = readOrders();
-    const index = orders.findIndex(o => o.id === id);
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
 
-    if (index === -1) {
-      return NextResponse.json({ success: false, error: 'الطلب غير موجود' }, { status: 404 });
-    }
-
-    orders[index].status = status;
-    writeOrders(orders);
-
-    return NextResponse.json({ success: true, order: orders[index] });
+    if (error) throw error;
+    return NextResponse.json({ success: true, order: mapOrder(data) });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -152,15 +139,12 @@ export async function DELETE(request) {
       return NextResponse.json({ success: false, error: 'معرف الطلب مطلوب' }, { status: 400 });
     }
 
-    const orders = readOrders();
-    const filtered = orders.filter(o => o.id !== id);
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', id);
 
-    if (filtered.length === orders.length) {
-      return NextResponse.json({ success: false, error: 'الطلب غير موجود' }, { status: 404 });
-    }
-
-    writeOrders(filtered);
-
+    if (error) throw error;
     return NextResponse.json({ success: true, message: 'تم حذف الطلب بنجاح' });
   } catch (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

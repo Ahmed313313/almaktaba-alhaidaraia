@@ -133,6 +133,19 @@
   z-index: 3;
 }
 
+.labelTag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  z-index: 3;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
 /* Content */
 .content {
   padding: var(--spacing-lg);
@@ -175,7 +188,14 @@
 .author {
   font-size: 0.8rem;
   color: var(--color-text-light);
+  margin-bottom: var(--spacing-sm);
+}
+
+.purchaseCount {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
   margin-bottom: var(--spacing-md);
+  display: block;
 }
 
 /* Footer */
@@ -241,6 +261,23 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.wishBtn {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  color: white;
+  animation: pulse 2s infinite;
+}
+
+.wishBtn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+}
+
+.wishSent {
+  background: var(--color-success);
+  color: white;
+  cursor: default;
 }
 
 @media (max-width: 480px) {

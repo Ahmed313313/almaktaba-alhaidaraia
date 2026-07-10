@@ -40,7 +40,12 @@ export default function RootLayout({ children }) {
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/logo.png" type="image/png" />
-        <meta name="theme-color" content="#1a1a2e" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#d4a853" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="الحيدرية" />
+        <link rel="apple-touch-icon" href="/logo.png" />
         <meta name="google-site-verification" content="" />
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {

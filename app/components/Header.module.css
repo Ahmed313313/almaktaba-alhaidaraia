@@ -180,15 +180,20 @@
   border-bottom: 1px solid var(--color-border);
   padding: 0;
   max-height: 0;
-  overflow: hidden;
+  overflow: visible;
   transition: all var(--transition-base);
   box-shadow: none;
+  /* Use clip-path instead of overflow for smooth animation */
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
 }
 
 .searchBar.searchOpen {
-  max-height: 80px;
-  padding: var(--spacing-md) 0;
+  max-height: 400px;
+  padding: var(--spacing-md) 0 var(--spacing-sm);
   box-shadow: var(--shadow-md);
+  clip-path: inset(0 0 -200px 0);
+  pointer-events: all;
 }
 
 .searchForm {
@@ -295,3 +300,107 @@
     height: 38px;
   }
 }
+
+/* ===== Autocomplete ===== */
+.autocomplete {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  z-index: 2000;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease;
+}
+
+.autocompleteItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: right;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.autocompleteItem:hover {
+  background: rgba(212, 168, 83, 0.08);
+}
+
+.autocompleteImg {
+  width: 36px;
+  height: 48px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-bg-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.2rem;
+}
+
+.autocompleteImg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.autocompleteInfo {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.autocompleteTitle {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autocompleteAuthor {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.autocompletePrice {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-secondary-dark);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.autocompleteAll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  background: rgba(212, 168, 83, 0.05);
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-secondary-dark);
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.autocompleteAll:hover {
+  background: rgba(212, 168, 83, 0.12);
+}
+
