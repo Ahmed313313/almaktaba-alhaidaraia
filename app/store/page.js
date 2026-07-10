@@ -177,7 +177,7 @@ function StoreContent() {
             )}
             {searchQuery && (
               <span className={styles.activeFilter}>
-                بحث: "{searchQuery}"
+                بحث: &ldquo;{searchQuery}&rdquo;
                 <button onClick={() => setSearchQuery('')}><FiX /></button>
               </span>
             )}

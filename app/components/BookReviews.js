@@ -1,9 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FiStar, FiSend, FiUser } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import styles from './BookReviews.module.css';
+
+// خارج المكوّن — دالة نقية لا تعتمد على حالة التصيير
+function timeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'الآن';
+  if (mins < 60) return `منذ ${mins} دقيقة`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `منذ ${hours} ساعة`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `منذ ${days} يوم`;
+  return new Date(dateStr).toLocaleDateString('ar-IQ');
+}
 
 function StarDisplay({ rating, size = 16 }) {
   return (
@@ -62,7 +75,7 @@ export default function BookReviews({ bookId }) {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchReviews = () => {
+  const fetchReviews = useCallback(() => {
     fetch(`/api/reviews?bookId=${bookId}`)
       .then(res => res.json())
       .then(data => {
@@ -74,9 +87,9 @@ export default function BookReviews({ bookId }) {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  };
+  }, [bookId]);
 
-  useEffect(() => { fetchReviews(); }, [bookId]);
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -108,17 +121,6 @@ export default function BookReviews({ bookId }) {
     setSubmitting(false);
   };
 
-  const timeAgo = (dateStr) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'الآن';
-    if (mins < 60) return `منذ ${mins} دقيقة`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `منذ ${hours} ساعة`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `منذ ${days} يوم`;
-    return new Date(dateStr).toLocaleDateString('ar-IQ');
-  };
 
   return (
     <div className={styles.reviewsSection}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FiPlus, FiEdit2, FiTrash2, FiX, FiEye, FiPackage, FiBook, FiLogOut, FiImage, FiArchive } from 'react-icons/fi';
 import { CATEGORIES } from '../lib/supabase';
@@ -9,7 +9,13 @@ import toast from 'react-hot-toast';
 import styles from './page.module.css';
 
 export default function AdminPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // استعادة حالة تسجيل الدخول مباشرة من sessionStorage (lazy init)
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('admin-auth') === 'true';
+    }
+    return false;
+  });
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -35,10 +41,7 @@ export default function AdminPage() {
     description: '', cover_url: '', images: [''], label: ''
   });
 
-  useEffect(() => {
-    const auth = sessionStorage.getItem('admin-auth');
-    if (auth === 'true') setIsLoggedIn(true);
-  }, []);
+
 
   useEffect(() => {
     if (isLoggedIn) fetchAll();
