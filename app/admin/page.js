@@ -23,6 +23,8 @@ export default function AdminPage() {
   const [selectedBooks, setSelectedBooks] = useState([]);
   const [categoryFilter, setCategoryFilter] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [imagesDragOver, setImagesDragOver] = useState(false);
+  const [dragImgIdx, setDragImgIdx] = useState(null);
   const [bulkCategory, setBulkCategory] = useState('');
 
   // Data states
@@ -210,6 +212,46 @@ export default function AdminPage() {
       reader.onload = (ev) => setBookForm(p => ({ ...p, cover_url: ev.target.result }));
       reader.readAsDataURL(file);
     }
+  };
+
+  // ===== Drag & Drop - صور المحتوى المتعددة =====
+  const readFilesAsDataURLs = (files) => {
+    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (validFiles.length === 0) return;
+    const readers = validFiles.map(file => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = (ev) => resolve(ev.target.result);
+      reader.readAsDataURL(file);
+    }));
+    Promise.all(readers).then(results => {
+      setBookForm(p => ({
+        ...p,
+        images: [...p.images.filter(img => img && img.trim()), ...results]
+      }));
+    });
+  };
+
+  const handleImagesDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImagesDragOver(false);
+    readFilesAsDataURLs(e.dataTransfer.files);
+  };
+
+  const handleImagesFileInput = (e) => {
+    readFilesAsDataURLs(e.target.files);
+    e.target.value = '';
+  };
+
+  const handleImageReorder = (targetIdx) => {
+    if (dragImgIdx === null || dragImgIdx === targetIdx) return;
+    setBookForm(p => {
+      const imgs = [...p.images];
+      const [moved] = imgs.splice(dragImgIdx, 1);
+      imgs.splice(targetIdx, 0, moved);
+      return { ...p, images: imgs };
+    });
+    setDragImgIdx(null);
   };
 
   // ===== Bulk Delete Books =====
@@ -620,32 +662,139 @@ export default function AdminPage() {
                         />
                       </div>
 
-                      {/* صور إضافية */}
+                      {/* صور إضافية - Drag & Drop + إعادة ترتيب */}
                       <div className="form-group">
                         <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <FiImage /> صور إضافية (روابط URL)
+                          <FiImage /> صور المحتوى الإضافية
+                          {bookForm.images.filter(img => img && img.trim()).length > 0 && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginRight: 'auto' }}>
+                              {bookForm.images.filter(img => img && img.trim()).length} صورة • اسحب الصور لإعادة ترتيبها
+                            </span>
+                          )}
                         </label>
-                        {bookForm.images.map((img, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                            <input
-                              type="url"
-                              value={img}
-                              onChange={e => handleImageChange(idx, e.target.value)}
-                              placeholder={`رابط الصورة ${idx + 1} (https://...)`}
-                              style={{ flex: 1 }}
-                            />
-                            {bookForm.images.length > 1 && (
-                              <button type="button" onClick={() => handleRemoveImageField(idx)}
-                                className={styles.deleteBtn} title="حذف" style={{ width: 36, height: 36, flexShrink: 0 }}>
-                                <FiX />
-                              </button>
-                            )}
+
+                        {/* منطقة الإفلات */}
+                        <div
+                          onDrop={handleImagesDrop}
+                          onDragOver={e => { e.preventDefault(); setImagesDragOver(true); }}
+                          onDragLeave={() => setImagesDragOver(false)}
+                          onClick={() => document.getElementById('content-images-input').click()}
+                          style={{
+                            border: `2px dashed ${imagesDragOver ? 'var(--color-secondary)' : 'var(--color-border)'}`,
+                            borderRadius: 10, padding: '18px 12px', textAlign: 'center',
+                            background: imagesDragOver ? 'rgba(212,168,83,0.1)' : 'var(--color-bg-warm)',
+                            transition: 'all 0.2s', cursor: 'pointer', marginBottom: 12,
+                            transform: imagesDragOver ? 'scale(1.01)' : 'scale(1)',
+                          }}
+                        >
+                          <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>📸</div>
+                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>اسحب صور هنا أو اضغط للاختيار</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                            يمكنك اختيار أكثر من صورة دفعة واحدة • PNG, JPG, WEBP
                           </div>
-                        ))}
-                        <button type="button" onClick={handleAddImageField} className="btn btn-sm btn-outline" style={{ marginTop: 4 }}>
-                          <FiPlus /> إضافة صورة أخرى
-                        </button>
+                        </div>
+                        <input
+                          id="content-images-input"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          style={{ display: 'none' }}
+                          onChange={handleImagesFileInput}
+                        />
+
+                        {/* شبكة المعاينة مع إعادة الترتيب */}
+                        {bookForm.images.filter(img => img && img.trim()).length > 0 && (
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))',
+                            gap: 10, marginBottom: 10,
+                          }}>
+                            {bookForm.images.map((img, idx) => {
+                              if (!img || !img.trim()) return null;
+                              return (
+                                <div
+                                  key={idx}
+                                  draggable
+                                  onDragStart={() => setDragImgIdx(idx)}
+                                  onDragEnd={() => setDragImgIdx(null)}
+                                  onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
+                                  onDrop={e => { e.stopPropagation(); handleImageReorder(idx); }}
+                                  style={{
+                                    position: 'relative',
+                                    borderRadius: 8,
+                                    overflow: 'hidden',
+                                    border: `2px solid ${dragImgIdx === idx ? 'var(--color-secondary)' : 'var(--color-border)'}`,
+                                    cursor: 'grab',
+                                    aspectRatio: '1',
+                                    background: 'var(--color-bg-warm)',
+                                    opacity: dragImgIdx === idx ? 0.45 : 1,
+                                    transition: 'all 0.15s',
+                                    boxShadow: dragImgIdx === idx ? '0 4px 16px rgba(0,0,0,0.2)' : 'none',
+                                  }}
+                                >
+                                  <img
+                                    src={img}
+                                    alt={`صورة ${idx + 1}`}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none' }}
+                                    onError={e => { e.target.style.opacity = '0.2'; }}
+                                  />
+                                  {/* رقم الترتيب */}
+                                  <div style={{
+                                    position: 'absolute', bottom: 4, right: 4,
+                                    background: 'rgba(0,0,0,0.65)', color: 'white',
+                                    borderRadius: 4, padding: '1px 6px',
+                                    fontSize: '0.65rem', fontWeight: 700,
+                                  }}>{idx + 1}</div>
+                                  {/* زر الحذف */}
+                                  <button
+                                    type="button"
+                                    onClick={() => setBookForm(p => ({ ...p, images: p.images.filter((_, i) => i !== idx) }))}
+                                    style={{
+                                      position: 'absolute', top: 4, left: 4,
+                                      background: 'rgba(231,76,60,0.9)', color: 'white',
+                                      border: 'none', borderRadius: '50%',
+                                      width: 22, height: 22, cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      fontSize: '0.75rem', lineHeight: 1, padding: 0,
+                                    }}
+                                    title="حذف"
+                                  >✕</button>
+                                  {/* مقبض السحب */}
+                                  <div style={{
+                                    position: 'absolute', top: 4, right: 4,
+                                    color: 'rgba(255,255,255,0.85)', fontSize: '1rem',
+                                    pointerEvents: 'none', lineHeight: 1, textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                                  }}>⠿</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* إضافة رابط URL */}
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input
+                            type="url"
+                            placeholder="أو أضف رابط صورة (https://...) واضغط Enter"
+                            style={{ flex: 1 }}
+                            id="image-url-input"
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                const url = e.target.value.trim();
+                                if (url) {
+                                  setBookForm(p => ({ ...p, images: [...p.images.filter(img => img && img.trim()), url] }));
+                                  e.target.value = '';
+                                }
+                              }
+                            }}
+                          />
+                        </div>
+                        <small style={{ color: 'var(--color-text-muted)', fontSize: '0.72rem', marginTop: 4, display: 'block' }}>
+                          اضغط Enter لإضافة الرابط • اسحب الصور الصغيرة لتغيير ترتيبها
+                        </small>
                       </div>
+
 
                       <div className={styles.formActions}>
                         <button type="submit" className="btn btn-primary">
