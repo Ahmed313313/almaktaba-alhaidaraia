@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FiSearch, FiFilter, FiGrid, FiList, FiX } from 'react-icons/fi';
 import BookCard from '../components/BookCard';
-import { DEMO_BOOKS, CATEGORIES } from '../lib/supabase';
+import { supabase, CATEGORIES } from '../lib/supabase';
 import styles from './page.module.css';
 
 function StoreContent() {
@@ -21,13 +21,23 @@ function StoreContent() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    fetch('/api/books')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setBooks(data.books);
-        setBooksLoading(false);
-      })
-      .catch(() => { setBooksLoading(false); });
+    const loadBooks = async () => {
+      try {
+        if (supabase) {
+          const { data } = await supabase
+            .from('books')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (data) setBooks(data);
+        } else {
+          const res = await fetch('/api/books');
+          const json = await res.json();
+          if (json.success) setBooks(json.books);
+        }
+      } catch {}
+      setBooksLoading(false);
+    };
+    loadBooks();
   }, []);
 
   useEffect(() => {

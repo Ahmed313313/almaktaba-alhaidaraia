@@ -33,7 +33,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, author, publisher, category, price, stock, description, cover_url, images } = body;
+    const { title, author, publisher, category, price, stock, description, cover_url, images, label, parts, volumes } = body;
 
     if (!title || !author || !category || price === undefined) {
       return NextResponse.json(
@@ -53,6 +53,9 @@ export async function POST(request) {
       description: description?.trim() || '',
       cover_url: cover_url || '',
       images: Array.isArray(images) ? images.filter(img => img && img.trim() !== '') : [],
+      label: label || '',
+      parts: parts ? Number(parts) : null,
+      volumes: volumes ? Number(volumes) : null,
     };
 
     const { data, error } = await supabase
@@ -72,7 +75,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, title, author, publisher, category, price, stock, description, cover_url, images } = body;
+    const { id, title, author, publisher, category, price, stock, description, cover_url, images, label, parts, volumes } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: 'معرف الكتاب مطلوب' }, { status: 400 });
@@ -90,6 +93,9 @@ export async function PUT(request) {
     if (images !== undefined) {
       updates.images = Array.isArray(images) ? images.filter(img => img && img.trim() !== '') : [];
     }
+    if (label !== undefined) updates.label = label || '';
+    updates.parts = parts ? Number(parts) : null;
+    updates.volumes = volumes ? Number(volumes) : null;
 
     const { data, error } = await supabase
       .from('books')

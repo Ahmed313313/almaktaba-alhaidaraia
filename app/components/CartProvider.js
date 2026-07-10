@@ -20,12 +20,22 @@ export function CartProvider({ children }) {
     }
   }, []);
 
-  // Save cart to localStorage on change
+  // Save cart to localStorage on change — strip base64 to avoid QuotaExceededError
   useEffect(() => {
-    if (items.length > 0) {
-      localStorage.setItem('haidariya-cart', JSON.stringify(items));
-    } else {
-      localStorage.removeItem('haidariya-cart');
+    try {
+      if (items.length > 0) {
+        const safeItems = items.map(item => ({
+          ...item,
+          // حذف الصور الكبيرة (base64) من التخزين المحلي
+          cover_url: item.cover_url?.startsWith('data:') ? '' : (item.cover_url || ''),
+          images: (item.images || []).filter(img => !img?.startsWith('data:')),
+        }));
+        localStorage.setItem('haidariya-cart', JSON.stringify(safeItems));
+      } else {
+        localStorage.removeItem('haidariya-cart');
+      }
+    } catch (e) {
+      console.warn('Cart save error:', e.message);
     }
   }, [items]);
 

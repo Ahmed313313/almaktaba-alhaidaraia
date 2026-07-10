@@ -40,7 +40,7 @@ export default function AdminPage() {
   const [editingBook, setEditingBook] = useState(null);
   const [bookForm, setBookForm] = useState({
     title: '', author: '', publisher: '', category: '', price: '', stock: '',
-    description: '', cover_url: '', images: [''], label: ''
+    description: '', cover_url: '', images: [''], label: '', parts: '', volumes: ''
   });
 
 
@@ -616,6 +616,28 @@ export default function AdminPage() {
                           <option value="الأكثر طلباً">🔥 الأكثر طلباً</option>
                           <option value="موصى به">⭐ موصى به</option>
                         </select>
+                      </div>
+                      <div className={styles.formRow}>
+                        <div className="form-group">
+                          <label>📚 عدد الأجزاء (اختياري)</label>
+                          <input
+                            type="number"
+                            value={bookForm.parts}
+                            onChange={e => setBookForm(p => ({ ...p, parts: e.target.value }))}
+                            placeholder="مثال: 3"
+                            min="1"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>📖 عدد المجلدات (اختياري)</label>
+                          <input
+                            type="number"
+                            value={bookForm.volumes}
+                            onChange={e => setBookForm(p => ({ ...p, volumes: e.target.value }))}
+                            placeholder="مثال: 2"
+                            min="1"
+                          />
+                        </div>
                       </div>
                       <div className="form-group">
                         <label>وصف الكتاب</label>

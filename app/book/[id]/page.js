@@ -195,6 +195,20 @@ export default function BookPage({ params }) {
               <strong>دار النشر:</strong> {book.publisher}
             </p>
           )}
+          {(book.parts || book.volumes) && (
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', margin: '8px 0' }}>
+              {book.parts && (
+                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--color-text-light)' }}>
+                  <strong style={{ color: 'var(--color-text)' }}>عدد الأجزاء:</strong> {book.parts} جزء
+                </p>
+              )}
+              {book.volumes && (
+                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--color-text-light)' }}>
+                  <strong style={{ color: 'var(--color-text)' }}>عدد المجلدات:</strong> {book.volumes} مجلد
+                </p>
+              )}
+            </div>
+          )}
 
           <div className={styles.priceBox}>
             <div className={styles.price}>

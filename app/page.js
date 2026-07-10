@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FiArrowLeft, FiBookOpen, FiTruck, FiShield, FiStar, FiEye } from 'react-icons/fi';
 import BookCard from './components/BookCard';
-import { DEMO_BOOKS, CATEGORIES } from './lib/supabase';
+import { supabase, CATEGORIES } from './lib/supabase';
 import styles from './page.module.css';
 
 export default function HomePage() {
@@ -14,14 +14,24 @@ export default function HomePage() {
   const [visitorCount, setVisitorCount] = useState(0);
 
   useEffect(() => {
-    // جلب الكتب من الـ API
-    fetch('/api/books')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && data.books.length > 0) setBooks(data.books);
-        setBooksLoading(false);
-      })
-      .catch(() => { setBooksLoading(false); });
+    // جلب الكتب مباشرةً من Supabase (أسرع من API Route)
+    const loadBooks = async () => {
+      try {
+        if (supabase) {
+          const { data } = await supabase
+            .from('books')
+            .select('id,title,author,category,price,stock,cover_url,label,purchase_count,created_at')
+            .order('created_at', { ascending: false });
+          if (data && data.length > 0) setBooks(data);
+        } else {
+          const res = await fetch('/api/books');
+          const json = await res.json();
+          if (json.success && json.books.length > 0) setBooks(json.books);
+        }
+      } catch {}
+      setBooksLoading(false);
+    };
+    loadBooks();
 
     // عداد الزوار
     const visited = sessionStorage.getItem('visited');
@@ -79,7 +89,7 @@ export default function HomePage() {
             </div>
             <div className={styles.heroStats}>
               <div className={styles.stat}>
-                <strong>{books.length}+</strong>
+                <strong>{books.length}</strong>
                 <span>عنوان متوفر</span>
               </div>
               <div className={styles.statDivider} />
@@ -194,24 +204,26 @@ export default function HomePage() {
             <h2>كتب مميزة</h2>
             <p>اختيارات المكتبة الحيدرية لكم</p>
           </div>
-          <div className={styles.booksGrid}>
-            {booksLoading ? (
-              <div className="flex-center" style={{ gridColumn: '1/-1', padding: '3rem', flexDirection: 'column', gap: 12 }}>
-                <div className="spinner" />
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>جاري تحميل الكتب...</p>
-              </div>
-            ) : featuredBooks.map((book, i) => (
-              <motion.div
-                key={book.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08, duration: 0.5 }}
-                viewport={{ once: true }}
-              >
-                <BookCard book={book} />
-              </motion.div>
-            ))}
-          </div>
+          {booksLoading ? (
+            <div className="flex-center" style={{ padding: '3rem', flexDirection: 'column', gap: 12 }}>
+              <div className="spinner" />
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>جاري تحميل الكتب...</p>
+            </div>
+          ) : (
+            <div className={styles.booksGrid}>
+              {featuredBooks.map((book, i) => (
+                <motion.div
+                  key={book.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08, duration: 0.5 }}
+                  viewport={{ once: true }}
+                >
+                  <BookCard book={book} />
+                </motion.div>
+              ))}
+            </div>
+          )}
           <div className={styles.viewAll}>
             <Link href="/store" className="btn btn-secondary btn-lg" id="view-all-books">
               عرض جميع الكتب <FiArrowLeft />
@@ -227,23 +239,25 @@ export default function HomePage() {
             <h2>وصل حديثاً</h2>
             <p>آخر الإضافات إلى مكتبتنا</p>
           </div>
-          <div className={styles.booksGrid}>
-            {booksLoading ? (
-              <div className="flex-center" style={{ gridColumn: '1/-1', padding: '3rem', flexDirection: 'column', gap: 12 }}>
-                <div className="spinner" />
-              </div>
-            ) : newArrivals.map((book, i) => (
-              <motion.div
-                key={book.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.5 }}
-                viewport={{ once: true }}
-              >
-                <BookCard book={book} />
-              </motion.div>
-            ))}
-          </div>
+          {booksLoading ? (
+            <div className="flex-center" style={{ padding: '2rem', gap: 12 }}>
+              <div className="spinner" />
+            </div>
+          ) : (
+            <div className={styles.booksGrid}>
+              {newArrivals.map((book, i) => (
+                <motion.div
+                  key={book.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1, duration: 0.5 }}
+                  viewport={{ once: true }}
+                >
+                  <BookCard book={book} />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
