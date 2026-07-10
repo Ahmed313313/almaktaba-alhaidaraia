@@ -9,7 +9,8 @@ import { DEMO_BOOKS, CATEGORIES } from './lib/supabase';
 import styles from './page.module.css';
 
 export default function HomePage() {
-  const [books, setBooks] = useState(DEMO_BOOKS);
+  const [books, setBooks] = useState([]);
+  const [booksLoading, setBooksLoading] = useState(true);
   const [visitorCount, setVisitorCount] = useState(0);
 
   useEffect(() => {
@@ -18,8 +19,9 @@ export default function HomePage() {
       .then(res => res.json())
       .then(data => {
         if (data.success && data.books.length > 0) setBooks(data.books);
+        setBooksLoading(false);
       })
-      .catch(() => { });
+      .catch(() => { setBooksLoading(false); });
 
     // عداد الزوار
     const visited = sessionStorage.getItem('visited');
@@ -193,7 +195,12 @@ export default function HomePage() {
             <p>اختيارات المكتبة الحيدرية لكم</p>
           </div>
           <div className={styles.booksGrid}>
-            {featuredBooks.map((book, i) => (
+            {booksLoading ? (
+              <div className="flex-center" style={{ gridColumn: '1/-1', padding: '3rem', flexDirection: 'column', gap: 12 }}>
+                <div className="spinner" />
+                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>جاري تحميل الكتب...</p>
+              </div>
+            ) : featuredBooks.map((book, i) => (
               <motion.div
                 key={book.id}
                 initial={{ opacity: 0, y: 30 }}
@@ -221,7 +228,11 @@ export default function HomePage() {
             <p>آخر الإضافات إلى مكتبتنا</p>
           </div>
           <div className={styles.booksGrid}>
-            {newArrivals.map((book, i) => (
+            {booksLoading ? (
+              <div className="flex-center" style={{ gridColumn: '1/-1', padding: '3rem', flexDirection: 'column', gap: 12 }}>
+                <div className="spinner" />
+              </div>
+            ) : newArrivals.map((book, i) => (
               <motion.div
                 key={book.id}
                 initial={{ opacity: 0, y: 30 }}

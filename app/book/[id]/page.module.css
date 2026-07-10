@@ -438,13 +438,17 @@
 @media (max-width: 768px) {
   .bookDetail {
     grid-template-columns: 1fr;
-    gap: var(--spacing-xl);
+    gap: var(--spacing-md);
   }
 
   .imageSection {
     position: static;
     max-width: 400px;
     margin: 0 auto;
+  }
+
+  .infoSection {
+    padding-top: 0;
   }
 
   .relatedGrid {

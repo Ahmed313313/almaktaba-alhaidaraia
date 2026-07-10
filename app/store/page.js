@@ -13,7 +13,8 @@ function StoreContent() {
   const initialCategory = searchParams.get('category') || '';
   const initialSearch = searchParams.get('search') || '';
 
-  const [books, setBooks] = useState(DEMO_BOOKS);
+  const [books, setBooks] = useState([]);
+  const [booksLoading, setBooksLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [sortBy, setSortBy] = useState('newest');
@@ -22,8 +23,11 @@ function StoreContent() {
   useEffect(() => {
     fetch('/api/books')
       .then(res => res.json())
-      .then(data => { if (data.success && data.books.length > 0) setBooks(data.books); })
-      .catch(() => {});
+      .then(data => {
+        if (data.success) setBooks(data.books);
+        setBooksLoading(false);
+      })
+      .catch(() => { setBooksLoading(false); });
   }, []);
 
   useEffect(() => {
@@ -185,7 +189,12 @@ function StoreContent() {
         )}
 
         {/* Books Grid */}
-        {filteredBooks.length > 0 ? (
+        {booksLoading ? (
+          <div className="flex-center" style={{ padding: '4rem', flexDirection: 'column', gap: 16 }}>
+            <div className="spinner" />
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>جاري تحميل الكتب...</p>
+          </div>
+        ) : filteredBooks.length > 0 ? (
           <div className={styles.booksGrid}>
             {filteredBooks.map((book, i) => (
               <motion.div
