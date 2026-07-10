@@ -26,6 +26,8 @@ export default function AdminPage() {
   const [imagesDragOver, setImagesDragOver] = useState(false);
   const [dragImgIdx, setDragImgIdx] = useState(null);
   const [bulkCategory, setBulkCategory] = useState('');
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   // Data states
   const [books, setBooks] = useState([]);
@@ -193,53 +195,69 @@ export default function AdminPage() {
     }
   };
 
-  // ===== Drag & Drop Image =====
-  const handleDrop = (e) => {
+  // ===== رفع الصورة إلى Supabase Storage =====
+  const uploadToStorage = async (file, folder = 'covers') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', folder);
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'فشل الرفع');
+    return data.url;
+  };
+
+  // ===== غلاف الكتاب =====
+  const handleDrop = async (e) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (ev) => setBookForm(p => ({ ...p, cover_url: ev.target.result }));
-      reader.readAsDataURL(file);
-    }
+    if (!file || !file.type.startsWith('image/')) return;
+    setUploadingCover(true);
+    try {
+      const url = await uploadToStorage(file, 'covers');
+      setBookForm(p => ({ ...p, cover_url: url }));
+      toast.success('تم رفع الغلاف ✅');
+    } catch (err) { toast.error('فشل رفع الغلاف: ' + err.message); }
+    setUploadingCover(false);
   };
 
-  const handleFileInput = (e) => {
+  const handleFileInput = async (e) => {
     const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (ev) => setBookForm(p => ({ ...p, cover_url: ev.target.result }));
-      reader.readAsDataURL(file);
-    }
+    if (!file || !file.type.startsWith('image/')) return;
+    setUploadingCover(true);
+    try {
+      const url = await uploadToStorage(file, 'covers');
+      setBookForm(p => ({ ...p, cover_url: url }));
+      toast.success('تم رفع الغلاف ✅');
+    } catch (err) { toast.error('فشل رفع الغلاف: ' + err.message); }
+    setUploadingCover(false);
   };
 
-  // ===== Drag & Drop - صور المحتوى المتعددة =====
-  const readFilesAsDataURLs = (files) => {
+  // ===== صور المحتوى المتعددة =====
+  const uploadMultipleToStorage = async (files) => {
     const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
     if (validFiles.length === 0) return;
-    const readers = validFiles.map(file => new Promise(resolve => {
-      const reader = new FileReader();
-      reader.onload = (ev) => resolve(ev.target.result);
-      reader.readAsDataURL(file);
-    }));
-    Promise.all(readers).then(results => {
+    setUploadingImages(true);
+    try {
+      const urls = await Promise.all(validFiles.map(f => uploadToStorage(f, 'content')));
       setBookForm(p => ({
         ...p,
-        images: [...p.images.filter(img => img && img.trim()), ...results]
+        images: [...p.images.filter(img => img && img.trim()), ...urls]
       }));
-    });
+      toast.success(`تم رفع ${urls.length} صورة ✅`);
+    } catch (err) { toast.error('فشل رفع الصور: ' + err.message); }
+    setUploadingImages(false);
   };
 
   const handleImagesDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setImagesDragOver(false);
-    readFilesAsDataURLs(e.dataTransfer.files);
+    uploadMultipleToStorage(e.dataTransfer.files);
   };
 
   const handleImagesFileInput = (e) => {
-    readFilesAsDataURLs(e.target.files);
+    uploadMultipleToStorage(e.target.files);
     e.target.value = '';
   };
 
@@ -661,7 +679,12 @@ export default function AdminPage() {
                           }}
                           onClick={() => document.getElementById('cover-file-input').click()}
                         >
-                          {bookForm.cover_url ? (
+                          {uploadingCover ? (
+                            <div style={{ color: 'var(--color-secondary)', fontSize: '0.9rem', padding: '8px 0' }}>
+                              <div className="spinner" style={{ width: 28, height: 28, margin: '0 auto 8px' }} />
+                              جاري رفع الغلاف...
+                            </div>
+                          ) : bookForm.cover_url ? (
                             <div style={{ position: 'relative', display: 'inline-block' }}>
                               <img src={bookForm.cover_url} alt="غلاف" style={{ maxHeight: 120, borderRadius: 6, maxWidth: '100%' }} />
                               <button type="button" onClick={e => { e.stopPropagation(); setBookForm(p => ({ ...p, cover_url: '' })); }}
@@ -709,11 +732,20 @@ export default function AdminPage() {
                             transform: imagesDragOver ? 'scale(1.01)' : 'scale(1)',
                           }}
                         >
-                          <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>📸</div>
-                          <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>اسحب صور هنا أو اضغط للاختيار</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
-                            يمكنك اختيار أكثر من صورة دفعة واحدة • PNG, JPG, WEBP
-                          </div>
+                          {uploadingImages ? (
+                            <div style={{ color: 'var(--color-secondary)', fontSize: '0.9rem', padding: '4px 0' }}>
+                              <div className="spinner" style={{ width: 24, height: 24, margin: '0 auto 6px' }} />
+                              جاري رفع الصور...
+                            </div>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: '1.8rem', marginBottom: 6 }}>📸</div>
+                              <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>اسحب صور هنا أو اضغط للاختيار</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
+                                يمكنك اختيار أكثر من صورة دفعة واحدة • PNG, JPG, WEBP
+                              </div>
+                            </>
+                          )}
                         </div>
                         <input
                           id="content-images-input"
