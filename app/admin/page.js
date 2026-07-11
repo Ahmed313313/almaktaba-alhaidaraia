@@ -9,13 +9,9 @@ import toast from 'react-hot-toast';
 import styles from './page.module.css';
 
 export default function AdminPage() {
-  // استعادة حالة تسجيل الدخول مباشرة من sessionStorage (lazy init)
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('admin-auth') === 'true';
-    }
-    return false;
-  });
+  // mounted: يمنع عرض أي شيء حتى يُحدَّد وضع تسجيل الدخول في المتصفح
+  const [mounted, setMounted] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -45,7 +41,12 @@ export default function AdminPage() {
     description: '', cover_url: '', images: [''], label: '', parts: '', volumes: ''
   });
 
-
+  // تحقق من تسجيل الدخول بعد الـ mount لتجنب Hydration Error
+  useEffect(() => {
+    const loggedIn = sessionStorage.getItem('admin-auth') === 'true';
+    setIsLoggedIn(loggedIn);
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isLoggedIn) fetchAll();
@@ -376,6 +377,7 @@ export default function AdminPage() {
   };
 
   // ===== LOGIN PAGE =====
+  if (!mounted) return null; // تجنب Hydration Error — ننتظر حتى يُعرف وضع تسجيل الدخول
   if (!isLoggedIn) {
     return (
       <div className={styles.loginPage}>

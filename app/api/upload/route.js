@@ -19,14 +19,17 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: 'لم يتم إرسال ملف' }, { status: 400 });
     }
 
-    // تنظيف اسم الملف
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    // تنظيف اسم الملف (لا نستخدم اسم الملف الأصلي لأنه قد يحتوي عربي)
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
     const safeName = `${folder}/${Date.now()}.${ext}`;
 
-    // نرسل الملف مباشرةً (بدون تحويل Buffer لتجنب مشكلة ByteString)
+    // نحوّل لـ Blob بدون اسم حتى نتجنب مشكلة الأحرف العربية في headers
+    const arrayBuffer = await file.arrayBuffer();
+    const cleanBlob = new Blob([arrayBuffer], { type: file.type || 'image/jpeg' });
+
     const { data, error } = await supabaseAdmin.storage
       .from(BUCKET)
-      .upload(safeName, file, {
+      .upload(safeName, cleanBlob, {
         contentType: file.type || 'image/jpeg',
         cacheControl: '31536000',
         upsert: true,
