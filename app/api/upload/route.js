@@ -20,17 +20,16 @@ export async function POST(request) {
     }
 
     // تنظيف اسم الملف
-    const ext = file.name.split('.').pop() || 'jpg';
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
     const safeName = `${folder}/${Date.now()}.${ext}`;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-
+    // نرسل الملف مباشرةً (بدون تحويل Buffer لتجنب مشكلة ByteString)
     const { data, error } = await supabaseAdmin.storage
       .from(BUCKET)
-      .upload(safeName, buffer, {
+      .upload(safeName, file, {
         contentType: file.type || 'image/jpeg',
-        cacheControl: '31536000', // cache سنة كاملة
-        upsert: false,
+        cacheControl: '31536000',
+        upsert: true,
       });
 
     if (error) {

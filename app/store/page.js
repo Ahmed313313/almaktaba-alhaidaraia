@@ -21,23 +21,11 @@ function StoreContent() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    const loadBooks = async () => {
-      try {
-        if (supabase) {
-          const { data } = await supabase
-            .from('books')
-            .select('*')
-            .order('created_at', { ascending: false });
-          if (data) setBooks(data);
-        } else {
-          const res = await fetch('/api/books');
-          const json = await res.json();
-          if (json.success) setBooks(json.books);
-        }
-      } catch {}
-      setBooksLoading(false);
-    };
-    loadBooks();
+    fetch('/api/books')
+      .then(r => r.json())
+      .then(d => { if (d.success) setBooks(d.books || []); })
+      .catch(() => {})
+      .finally(() => setBooksLoading(false));
   }, []);
 
   useEffect(() => {

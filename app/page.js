@@ -14,24 +14,12 @@ export default function HomePage() {
   const [visitorCount, setVisitorCount] = useState(0);
 
   useEffect(() => {
-    // جلب الكتب مباشرةً من Supabase (أسرع من API Route)
-    const loadBooks = async () => {
-      try {
-        if (supabase) {
-          const { data } = await supabase
-            .from('books')
-            .select('id,title,author,category,price,stock,cover_url,label,purchase_count,created_at')
-            .order('created_at', { ascending: false });
-          if (data && data.length > 0) setBooks(data);
-        } else {
-          const res = await fetch('/api/books');
-          const json = await res.json();
-          if (json.success && json.books.length > 0) setBooks(json.books);
-        }
-      } catch {}
-      setBooksLoading(false);
-    };
-    loadBooks();
+    // جلب الكتب عبر API (يعمل دائماً ويدعم CDN Cache على Vercel)
+    fetch('/api/books')
+      .then(r => r.json())
+      .then(d => { if (d.success) setBooks(d.books || []); })
+      .catch(() => {})
+      .finally(() => setBooksLoading(false));
 
     // عداد الزوار
     const visited = sessionStorage.getItem('visited');

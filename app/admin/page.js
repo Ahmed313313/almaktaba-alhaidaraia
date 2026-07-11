@@ -195,10 +195,31 @@ export default function AdminPage() {
     }
   };
 
+  // ===== ضغط الصورة قبل الرفع (يقلل الحجم 70-80% بدون فقدان جودة ملحوظ) =====
+  const compressImage = (file, maxWidth = 1200, quality = 0.85) =>
+    new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        const ratio = Math.min(maxWidth / img.width, 1); // لا نكبّر الصور الصغيرة
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * ratio);
+        canvas.height = Math.round(img.height * ratio);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => { URL.revokeObjectURL(url); resolve(blob || file); },
+          'image/jpeg', quality
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+
   // ===== رفع الصورة إلى Supabase Storage =====
   const uploadToStorage = async (file, folder = 'covers') => {
+    const compressed = await compressImage(file, folder === 'covers' ? 1200 : 1600, 0.85);
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', compressed, file.name);
     formData.append('folder', folder);
     const res = await fetch('/api/upload', { method: 'POST', body: formData });
     const data = await res.json();
