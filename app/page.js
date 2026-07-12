@@ -189,8 +189,8 @@ export default function HomePage() {
       <section className={styles.section} style={{ background: 'var(--color-bg-warm)' }}>
         <div className="container">
           <div className="section-title">
-            <h2>كتب مميزة</h2>
-            <p>اختيارات المكتبة الحيدرية لكم</p>
+            <h2>من المكتبة</h2>
+            <p>تصفح وأختر ما يناسبك</p>
           </div>
           {booksLoading ? (
             <div className="flex-center" style={{ padding: '3rem', flexDirection: 'column', gap: 12 }}>
